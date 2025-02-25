@@ -5,7 +5,7 @@ import dbConfig from './config/dbConfig';
 const app: Application = express();
 app.use(express.json());
 
-// Connect to SQL database
+// connect to SQL database
 sql.connect(dbConfig)
   .then((pool) => {
     console.log('Connected to Microsoft SQL Server');
