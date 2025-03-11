@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Vibe Belt Simulator</title>
+  <style>
+
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="index.css" />
+</head>
+
+<body>
+  <div class="container py-4">
+    <h1 class="mb-4" style="color: white">Belt Scale Downtime</h1>
+
+    <!-- Downtime Event Form -->
+    <div class="card mb-4" id="downtimeCardID">
+      <div class="card-header">Add New Downtime Event</div>
+      <div class="card-body">
+        <form id="downtimeForm">
+          <div class="mb-3">
+            <label for="startTime" class="form-label">Start Time</label>
+            <input type="datetime-local" id="startTime" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label for="endTime" class="form-label">End Time</label>
+            <input type="datetime-local" id="endTime" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label for="reason" class="form-label">Reason</label>
+            <input type="text" id="reason" class="form-control" placeholder="Reason for downtime" required />
+          </div>
+          <button type="submit" class="btn btn-primary">Submit Downtime</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Button to Fetch Downtime Events -->
+    <div class="d-flex align-items-center" style="padding-bottom: 25px;">
+      <h2 class="mb-0 me-2" style="color: white">Existing Downtime Events for </h2>
+      <input type="date" id="existingDateTable" class="form-control" />
+
+      <button id="fetchEventsBtn" class="btn btn-success">Refresh List</button>
+      
+    </div>
+
+    <!-- Table to Display Downtime Events -->
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Start Time</th>
+          <th scope="col">Stop Time</th>
+          <th scope="col">Tons</th>
+        </tr>
+      </thead>
+      <tbody id="downtimeTableBody">
+        <!-- Rows will be populated dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bootstrap 5 JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const downtimeForm = document.getElementById('downtimeForm');
+    const fetchEventsBtn = document.getElementById('fetchEventsBtn');
+    const downtimeTableBody = document.getElementById('downtimeTableBody');
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    const isoDate = `${year}-${month}-${day}`;
+
+    document.getElementById('existingDateTable').value = isoDate;
+    // 1) Handle Form Submission to POST /api/downtime
+    downtimeForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const startTime = document.getElementById('startTime').value;
+      const endTime = document.getElementById('endTime').value;
+      const reason = document.getElementById('reason').value;
+
+      // POST the form data as JSON
+      fetch('/api/downtime', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ startTime, endTime, reason })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            alert('Error: ' + data.error);
+          } else {
+            alert(data.message || 'Downtime event added!');
+            // Clear the form
+            downtimeForm.reset();
+            // Optionally, refresh the table
+            loadDowntimeEvents();
+          }
+        })
+        .catch(error => {
+          console.error('Error inserting downtime:', error);
+          alert('Failed to add downtime event.');
+        });
+    });
+
+    // 2) Fetch and Display Downtime Events (GET /api/downtime)
+    fetchEventsBtn.addEventListener('click', () => {
+      loadDowntimeEvents();
+    });
+
+    function loadDowntimeEvents() {
+      const dateToFetch = document.getElementById('existingDateTable').value;
+      //console.log(dateToFetch);
+      fetch('/api/getTodayDowntime?date=' + dateToFetch)
+        .then(response => response.json())
+        .then(events => {
+          downtimeTableBody.innerHTML = ''; // Clear current rows
+
+          events.forEach(event => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${event.id}</td>
+              <td>${new Date(event.startTime).toLocaleString()}</td>
+              <td>${new Date(event.stopTime).toLocaleString()}</td>
+              <td>${event.tons}</td>
+            `;
+            downtimeTableBody.appendChild(row);
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching downtime events:', error);
+          alert('Failed to fetch downtime events.');
+        });
+    }
+
+    // Optionally load events on page load
+    window.addEventListener('DOMContentLoaded', loadDowntimeEvents);
+  </script>
+</body>
+
+</html>
