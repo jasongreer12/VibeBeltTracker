@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from 'express';
 import sql from 'mssql';
 import dbConfig from './config/dbConfig';
 import getTodayDowntime from './routes/getDowntime';
+import insertDowntime from './routes/insertDowntime';
 
 const app: Application = express();
 app.use(express.json());
@@ -32,6 +33,7 @@ app.get('/api/beltdetails', async (req: Request, res: Response) => {
 });
 
 app.use('/api', getTodayDowntime);
+app.use('/api', insertDowntime);
 
 // start server
 app.listen(3000, () => {

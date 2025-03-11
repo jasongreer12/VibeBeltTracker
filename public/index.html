@@ -29,9 +29,20 @@
             <label for="endTime" class="form-label">End Time</label>
             <input type="datetime-local" id="endTime" class="form-control" required />
           </div>
+          <div class="mb-3 row">
+            <div class="col-md-6">
+              <label for="tonsMoved" class="form-label">Tons Moved</label>
+              <input type="number" id="tonsMoved" class="form-control" placeholder="Tons moved" min="0" required />
+            </div>
+            <div class="col-md-6">
+              <label for="downtimeCode" class="form-label">Downtime Code</label>
+              <input type="text" id="downtimeCode" class="form-control" placeholder="ie. 100, 200, etc" required />
+            </div>
+          </div>
           <div class="mb-3">
             <label for="reason" class="form-label">Reason</label>
-            <input type="text" id="reason" class="form-control" placeholder="Reason for downtime" required />
+            <input type="text" id="reason" class="form-control" placeholder="Reason for downtime" required
+              autocomplete="off" />
           </div>
           <button type="submit" class="btn btn-primary">Submit Downtime</button>
         </form>
@@ -44,7 +55,7 @@
       <input type="date" id="existingDateTable" class="form-control" />
 
       <button id="fetchEventsBtn" class="btn btn-success">Refresh List</button>
-      
+
     </div>
 
     <!-- Table to Display Downtime Events -->
@@ -78,41 +89,35 @@
     const isoDate = `${year}-${month}-${day}`;
 
     document.getElementById('existingDateTable').value = isoDate;
-    // 1) Handle Form Submission to POST /api/downtime
-    downtimeForm.addEventListener('submit', (e) => {
-      e.preventDefault();
+    // handle form submission
+
+
+    document.getElementById("downtimeForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
 
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
       const reason = document.getElementById('reason').value;
+      const downtimeCode = document.getElementById('startTime').value;
+      const tonsMoved = document.getElementById('endTime').value;
+      const startDateObj = new Date(startTime); // using this instead of existingDateTable since they could be different
 
-      // POST the form data as JSON
-      fetch('/api/downtime', {
-        method: 'POST',
+      // format it as YYYY-MM-DD
+      const recordDate = startDateObj.toISOString().split('T')[0];
+
+      const response = await fetch('/api/insertDowntime', {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ startTime, endTime, reason })
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            alert('Error: ' + data.error);
-          } else {
-            alert(data.message || 'Downtime event added!');
-            // Clear the form
-            downtimeForm.reset();
-            // Optionally, refresh the table
-            loadDowntimeEvents();
-          }
-        })
-        .catch(error => {
-          console.error('Error inserting downtime:', error);
-          alert('Failed to add downtime event.');
-        });
+        body: JSON.stringify({ startTime, endTime, reason, downtimeCode, tonsMoved, recordDate })
+      });
+
+      const data = await response.json();
+      alert(data.message);
     });
 
-    // 2) Fetch and Display Downtime Events (GET /api/downtime)
+
     fetchEventsBtn.addEventListener('click', () => {
       loadDowntimeEvents();
     });
@@ -142,7 +147,6 @@
         });
     }
 
-    // Optionally load events on page load
     window.addEventListener('DOMContentLoaded', loadDowntimeEvents);
   </script>
 </body>
