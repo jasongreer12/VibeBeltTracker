@@ -65,7 +65,9 @@
           <th scope="col">ID</th>
           <th scope="col">Start Time</th>
           <th scope="col">Stop Time</th>
-          <th scope="col">Tons</th>
+          <th scope="col">Code</th>
+          <th scope="col">Date</th>
+          <th scope="col">Total Minutes Down</th>
         </tr>
       </thead>
       <tbody id="downtimeTableBody">
@@ -98,8 +100,8 @@
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
       const reason = document.getElementById('reason').value;
-      const downtimeCode = document.getElementById('startTime').value;
-      const tonsMoved = document.getElementById('endTime').value;
+      const downtimeCode = document.getElementById('downtimeCode').value;
+      const tonsMoved = document.getElementById('tonsMoved').value;
       const startDateObj = new Date(startTime); // using this instead of existingDateTable since they could be different
 
       // format it as YYYY-MM-DD
@@ -133,10 +135,12 @@
           events.forEach(event => {
             const row = document.createElement('tr');
             row.innerHTML = `
-              <td>${event.id}</td>
-              <td>${new Date(event.startTime).toLocaleString()}</td>
-              <td>${new Date(event.stopTime).toLocaleString()}</td>
-              <td>${event.tons}</td>
+              <td>${event.detailID}</td>
+              <td>${event.startingDowntime}</td>
+              <td>${event.endingDowntime}</td>
+              <td>${event.code}</td>
+              <td>${new Date(event.day).toLocaleString()}</td>
+              <td>${event.downtimeMinutes}</td>
             `;
             downtimeTableBody.appendChild(row);
           });

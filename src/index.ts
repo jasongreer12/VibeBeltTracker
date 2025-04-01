@@ -7,6 +7,17 @@ import insertDowntime from './routes/insertDowntime';
 const app: Application = express();
 app.use(express.json());
 
+
+/*
+  Note: for project, i should be displaying plant duration for selected day, total rock crushed for day, total plant downtime for day, 
+        downtime event, true plant availibility, plant availibility % for day. 
+
+
+
+*/
+
+
+
 app.use(express.static("public"));
 // connect to SQL database
 sql.connect(dbConfig)
