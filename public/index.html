@@ -14,38 +14,49 @@
 
 <body>
   <div class="container py-4">
-    <h1 class="mb-4" style="color: white">Belt Scale Downtime</h1>
+    <!-- <h1 class="mb-4" style="color: white">Belt Scale Downtime</h1> -->
 
     <!-- Downtime Event Form -->
     <div class="card mb-4" id="downtimeCardID">
-      <div class="card-header">Add New Downtime Event</div>
-      <div class="card-body">
-        <form id="downtimeForm">
-          <div class="mb-3">
-            <label for="startTime" class="form-label">Start Time</label>
-            <input type="datetime-local" id="startTime" class="form-control" required />
-          </div>
-          <div class="mb-3">
-            <label for="endTime" class="form-label">End Time</label>
-            <input type="datetime-local" id="endTime" class="form-control" required />
-          </div>
-          <div class="mb-3 row">
-            <div class="col-md-6">
-              <label for="tonsMoved" class="form-label">Tons Moved</label>
-              <input type="number" id="tonsMoved" class="form-control" placeholder="Tons moved" min="0" required />
-            </div>
-            <div class="col-md-6">
-              <label for="downtimeCode" class="form-label">Downtime Code</label>
-              <input type="text" id="downtimeCode" class="form-control" placeholder="ie. 100, 200, etc" required />
+      <div class="container my-4">
+        <!-- Flex container for metric boxes -->
+        <div class="d-flex justify-content-between align-items-stretch">
+          <!-- Box 1 -->
+          <div class="card metric-box text-center">
+            <div class="card-body">
+              <h5 class="card-title">Plant Duration</h5>
+              <p class="card-text" id="plantDurationID"></p>
             </div>
           </div>
-          <div class="mb-3">
-            <label for="reason" class="form-label">Reason</label>
-            <input type="text" id="reason" class="form-control" placeholder="Reason for downtime" required
-              autocomplete="off" />
+          <!-- Box 2 -->
+          <div class="card metric-box text-center">
+            <div class="card-body">
+              <h5 class="card-title">Total Downtime</h5>
+              <p class="card-text" id="downtimeID"></p>
+            </div>
           </div>
-          <button type="submit" class="btn btn-primary">Submit Downtime</button>
-        </form>
+          <!-- Box 3 -->
+          <div class="card metric-box text-center">
+            <div class="card-body">
+              <h5 class="card-title">Total Rock Crushed</h5>
+              <p class="card-text" id="tonsID"></p>
+            </div>
+          </div>
+          <!-- Box 4 -->
+          <div class="card metric-box text-center">
+            <div class="card-body">
+              <h5 class="card-title">True Plant Availabilty</h5>
+              <p class="card-text" id="truePlantID"></p>
+            </div>
+          </div>
+          <!-- Box 5 -->
+          <div class="card metric-box text-center">
+            <div class="card-body">
+              <h5 class="card-title">Plant Availability</h5>
+              <p class="card-text" id="plantAvailabilityID"></p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -68,6 +79,7 @@
           <th scope="col">Code</th>
           <th scope="col">Date</th>
           <th scope="col">Total Minutes Down</th>
+          <th scope="col">Save Code</th>
         </tr>
       </thead>
       <tbody id="downtimeTableBody">
@@ -79,7 +91,7 @@
   <!-- Bootstrap 5 JS (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const downtimeForm = document.getElementById('downtimeForm');
+    //const downtimeForm = document.getElementById('downtimeForm');
     const fetchEventsBtn = document.getElementById('fetchEventsBtn');
     const downtimeTableBody = document.getElementById('downtimeTableBody');
 
@@ -91,37 +103,12 @@
     const isoDate = `${year}-${month}-${day}`;
 
     document.getElementById('existingDateTable').value = isoDate;
-    // handle form submission
-
-
-    document.getElementById("downtimeForm").addEventListener("submit", async function (event) {
-      event.preventDefault();
-
-      const startTime = document.getElementById('startTime').value;
-      const endTime = document.getElementById('endTime').value;
-      const reason = document.getElementById('reason').value;
-      const downtimeCode = document.getElementById('downtimeCode').value;
-      const tonsMoved = document.getElementById('tonsMoved').value;
-      const startDateObj = new Date(startTime); // using this instead of existingDateTable since they could be different
-
-      // format it as YYYY-MM-DD
-      const recordDate = startDateObj.toISOString().split('T')[0];
-
-      const response = await fetch('/api/insertDowntime', {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ startTime, endTime, reason, downtimeCode, tonsMoved, recordDate })
-      });
-
-      const data = await response.json();
-      alert(data.message);
-    });
 
 
     fetchEventsBtn.addEventListener('click', () => {
       loadDowntimeEvents();
+      getMetrics();
+      console.log('fetcheventsbtn clicked');
     });
 
     function loadDowntimeEvents() {
@@ -131,18 +118,26 @@
         .then(response => response.json())
         .then(events => {
           downtimeTableBody.innerHTML = ''; // Clear current rows
-
+          if (events === "EMPTY") {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td colspan="7" class="text-center">No data for this date.</td>`;
+            downtimeTableBody.appendChild(row);
+            return; // Exit the function
+          }
+          let rowCounter = 0;
           events.forEach(event => {
             const row = document.createElement('tr');
             row.innerHTML = `
               <td>${event.detailID}</td>
-              <td>${event.startingDowntime}</td>
-              <td>${event.endingDowntime}</td>
-              <td>${event.code}</td>
-              <td>${new Date(event.day).toLocaleString()}</td>
+              <td>${event.startingDowntime.split('T')[1].split('.')[0]}</td>
+              <td>${event.endingDowntime.split('T')[1].split('.')[0]}</td>
+              <td><input type='text' class='form-control' value=${event.code}></td>
+              <td>${new Date(event.day).toISOString().split('T')[0]}</td>
               <td>${event.downtimeMinutes}</td>
+              <td><button class='btn btn-primary' id='tblBtn${rowCounter}' onclick='updateOpDetails(${rowCounter})'>Save</button></td>
             `;
             downtimeTableBody.appendChild(row);
+            rowCounter++;
           });
         })
         .catch(error => {
@@ -151,7 +146,50 @@
         });
     }
 
-    window.addEventListener('DOMContentLoaded', loadDowntimeEvents);
+    function getMetrics() {
+      const dateToFetch = document.getElementById('existingDateTable').value;
+
+      fetch('/api/getMetrics?date=' + dateToFetch)
+        .then(response => response.json())
+        .then(metrics => {
+          if (metrics === "EMPTY") {
+            document.getElementById('plantDurationID').textContent = "No data to display";
+            document.getElementById('downtimeID').textContent = "No data to display";
+            document.getElementById('tonsID').textContent = "No data to display";
+            document.getElementById('truePlantID').textContent = "No data to display";
+            document.getElementById('plantAvailabilityID').textContent = "No data to display";
+          }
+          else {
+            document.getElementById('plantDurationID').textContent = metrics.plantUp / 60 + " hrs";
+            document.getElementById('downtimeID').textContent = metrics.downtime / 60 + " hrs";
+            document.getElementById('tonsID').textContent = metrics.tons + " tons";
+            document.getElementById('truePlantID').textContent = (metrics.truePlantAvailability).toFixed(2) + "%";
+            document.getElementById('plantAvailabilityID').textContent = metrics.plantAvailability + "%";
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching metrics:', error);
+        });
+
+    }
+
+    function updateOpDetails(rowID) {
+      const btn = document.getElementById(`tblBtn${rowID}`);
+      // Get the row 
+      const row = btn.closest('tr');
+
+      const inputField = row.querySelector('input');
+      // Get the value from the input field
+      const code = inputField.value;
+      const detailID = row.cells[0].textContent.trim();
+
+      fetch('/api/updateOpDetail?code=' + code + '&detailID=' + detailID);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDowntimeEvents();
+      getMetrics();
+    });
   </script>
 </body>
 

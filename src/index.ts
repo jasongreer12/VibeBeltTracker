@@ -3,6 +3,8 @@ import sql from 'mssql';
 import dbConfig from './config/dbConfig';
 import getTodayDowntime from './routes/getDowntime';
 import insertDowntime from './routes/insertDowntime';
+import getMetrics from './routes/getMetrics';
+import updateOpDetail from './routes/updateOpDetail';
 
 const app: Application = express();
 app.use(express.json());
@@ -45,6 +47,8 @@ app.get('/api/beltdetails', async (req: Request, res: Response) => {
 
 app.use('/api', getTodayDowntime);
 app.use('/api', insertDowntime);
+app.use('/api', getMetrics);
+app.use('/api', updateOpDetail);
 
 // start server
 app.listen(3000, () => {
