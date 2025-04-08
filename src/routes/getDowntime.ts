@@ -24,7 +24,7 @@ router.get('/getTodayDowntime', async (req, res) => {
     const pool: sql.ConnectionPool = req.app.locals.db;
     const result = await pool.request()
       .input('dateToFetch', sql.Date, dateToFetch)
-      .query<OpDetailsRecord>('SELECT * FROM OpDetails WHERE day = @dateToFetch');
+      .query<OpDetailsRecord>('SELECT * FROM OpDetails WHERE day = @dateToFetch ORDER BY endingDowntime');
 
     const recordset = result.recordset;
     //console.log(recordset.length);
@@ -44,8 +44,8 @@ router.get('/getTodayDowntime', async (req, res) => {
       // fetch the records after insertion
       const newResult = await pool.request()
         .input('dateToFetch', sql.Date, dateToFetch)
-        .query('SELECT * FROM OpDetails WHERE day = @dateToFetch');
-      console.log(newResult.recordset.length + " new result record set in getdowntime line 48.");
+        .query('SELECT * FROM OpDetails WHERE day = @dateToFetch ORDER BY endingDowntime');
+      //console.log(newResult.recordset.length + " new result record set in getdowntime line 48.");
       if (newResult.recordset.length === 0) {
         res.json("EMPTY");
       }

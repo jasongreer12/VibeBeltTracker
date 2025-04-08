@@ -164,7 +164,11 @@
             document.getElementById('downtimeID').textContent = metrics.downtime / 60 + " hrs";
             document.getElementById('tonsID').textContent = metrics.tons + " tons";
             document.getElementById('truePlantID').textContent = (metrics.truePlantAvailability).toFixed(2) + "%";
-            document.getElementById('plantAvailabilityID').textContent = metrics.plantAvailability + "%";
+            if (metrics.plantAvailability != -1) {
+              document.getElementById('plantAvailabilityID').textContent = metrics.plantAvailability + "%";
+            } else {
+              document.getElementById('plantAvailabilityID').textContent = "No data to display";
+            }
           }
         })
         .catch(error => {
@@ -173,7 +177,7 @@
 
     }
 
-    function updateOpDetails(rowID) {
+    function updateOpDetails(rowID) { // need to add validation check to only allow numbers
       const btn = document.getElementById(`tblBtn${rowID}`);
       // Get the row 
       const row = btn.closest('tr');
