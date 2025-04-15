@@ -1,5 +1,6 @@
 body {
     background-color: #666666;
+    background-image: url("backgroundImage.png");
 }
 
 #downtimeCardID {
