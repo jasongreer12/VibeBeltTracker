@@ -64,19 +64,18 @@
       </div>
     </div>
 
-    <!-- Button to Fetch Downtime Events -->
     <div class="d-flex align-items-center" style="padding-bottom: 25px;">
-      <h2 class="mb-0 me-2" style="color: white">Existing Downtime Events for </h2>
+      <h2 class="mb-0 me-2" style="color: white">Existing Downtime Events for</h2>
       <input type="date" id="dateSelector1" class="form-control" />
-      <h2 class="mb-0 me-2" style="color: white"> through </h2>
+      <!-- Date Range Picker Container -->
       <input type="text" id="dateSelector2" class="form-control" />
 
       <!-- make a dropdown that changes from day week and month-->
-      <select class="form-select">
+      <select class="form-select" id="daySelector" onchange="changeView(this);">
         <option value="single" selected>Day</option>
-        <option value="Multiple">Multiple Days</option>
+        <option value="multiple">Multiple Days</option>
       </select>
-      
+
     </div>
 
     <!-- Table to Display Downtime Events -->
@@ -101,9 +100,9 @@
   <!-- Bootstrap 5 JS (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    $('input[id="dateSelector2"]').daterangepicker();
     //const downtimeForm = document.getElementById('downtimeForm');
-    const fetchEventsBtn = document.getElementById('dateSelector1');
+    const fetchDate1 = document.getElementById('dateSelector1');
+    const fetchDate2 = document.getElementById('dateSelector2');
     const downtimeTableBody = document.getElementById('downtimeTableBody');
 
     const today = new Date();
@@ -116,14 +115,26 @@
     document.getElementById('dateSelector1').value = isoDate;
 
 
-    fetchEventsBtn.addEventListener('click', () => {
+    document.getElementById('dateSelector1').addEventListener('change', () => {
       loadDowntimeEvents();
       getMetrics();
-      console.log('fetcheventsbtn clicked');
     });
+    $('#dateSelector2').on('apply.daterangepicker', function(ev, picker) {
+    loadDowntimeEvents();
+    getMetrics();
+  });
 
     function loadDowntimeEvents() {
-      const dateToFetch = document.getElementById('dateSelector1').value;
+      const pageViewValue = document.getElementById('daySelector').value;
+      console.log(pageViewValue);
+      let dateToFetch = "";
+      if (pageViewValue === "single") {
+        dateToFetch = document.getElementById('dateSelector1').value;
+      }
+      else {
+        dateToFetch = document.getElementById('dateSelector2').value;
+        alert(dateToFetch);
+      }
       //console.log(dateToFetch);
       fetch('/api/getTodayDowntime?date=' + dateToFetch)
         .then(response => response.json())
@@ -199,6 +210,17 @@
       const detailID = row.cells[0].textContent.trim();
 
       fetch('/api/updateOpDetail?code=' + code + '&detailID=' + detailID);
+    }
+
+    function changeView(selectElement) {
+      if (selectElement.value === "single") {
+        document.getElementById("dateSelector2").style.display = "none";
+        document.getElementById("dateSelector1").style.display = "flex";
+      } else if (selectElement.value === "multiple") {
+        $('input[id="dateSelector2"]').daterangepicker();
+        document.getElementById("dateSelector2").style.display = "flex";
+        document.getElementById("dateSelector1").style.display = "none";
+      }
     }
 
     window.addEventListener('DOMContentLoaded', () => {

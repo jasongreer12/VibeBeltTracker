@@ -18,6 +18,10 @@ body {
     max-width: fit-content;
 }
 
+#dateSelector2 {
+    display: none;
+}
+
 .form-select {
     display: flex;
     max-width: fit-content;

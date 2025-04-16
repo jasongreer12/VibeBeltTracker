@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
 import sql from 'mssql';
+import moment from 'moment';
 
 const router = Router();
 
 const trueShiftStart: string = '12:00:00'; // times in UTC. Equivalent to 06:00 AM in GMT-5
 const trueShiftEnd: string = '23:00:00'; // times in UTC. Equivalent to 05:00 PM in GMT-5
 
-// need to get total shift time from beltdetails to see how long belt didn't run relative to true shift times. Then need to get downtime reasons from users if there are any in seperate file. 
 interface OpDetailsRecord {
   detailID: number;
   recordID: number | null;
@@ -20,16 +20,30 @@ interface OpDetailsRecord {
 router.get('/getTodayDowntime', async (req, res) => {
   try {
     const dateToFetch = req.query.date as string;
-    //console.log(dateToFetch);
     const pool: sql.ConnectionPool = req.app.locals.db;
-    const result = await pool.request()
-      .input('dateToFetch', sql.Date, dateToFetch)
-      .query<OpDetailsRecord>('SELECT * FROM OpDetails WHERE day = @dateToFetch ORDER BY endingDowntime');
-
+    
+    // base query to bind inputs dynamically
+    let query = 'SELECT * FROM OpDetails WHERE day ';
+    const request = pool.request();
+    
+    if (dateToFetch.includes(' - ')) {
+      // use moment.js to split each date
+      const [startStr, endStr] = dateToFetch.split(' - ');
+      const start = moment(startStr, "MM/DD/YYYY").format("YYYY-MM-DD");
+      const end   = moment(endStr, "MM/DD/YYYY").format("YYYY-MM-DD");
+      
+      query += 'BETWEEN @start AND @end ';
+      request.input('start', sql.Date, start);
+      request.input('end', sql.Date, end);
+    } else {
+      query += '= @date ';
+      request.input('date', sql.Date, dateToFetch);
+    }
+    
+    query += 'ORDER BY endingDowntime';
+    
+    const result = await request.query<OpDetailsRecord>(query);
     const recordset = result.recordset;
-    //console.log(recordset.length);
-    //console.log(recordset);
-    //console.log(dateToFetch);
 
 
 
