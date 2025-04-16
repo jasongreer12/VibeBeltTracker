@@ -8,6 +8,10 @@
   <style>
 
   </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="index.css" />
 </head>
@@ -63,10 +67,16 @@
     <!-- Button to Fetch Downtime Events -->
     <div class="d-flex align-items-center" style="padding-bottom: 25px;">
       <h2 class="mb-0 me-2" style="color: white">Existing Downtime Events for </h2>
-      <input type="date" id="existingDateTable" class="form-control" />
+      <input type="date" id="dateSelector1" class="form-control" />
+      <h2 class="mb-0 me-2" style="color: white"> through </h2>
+      <input type="text" id="dateSelector2" class="form-control" />
 
-      <button id="fetchEventsBtn" class="btn btn-success">Refresh List</button>
-
+      <!-- make a dropdown that changes from day week and month-->
+      <select class="form-select">
+        <option value="single" selected>Day</option>
+        <option value="Multiple">Multiple Days</option>
+      </select>
+      
     </div>
 
     <!-- Table to Display Downtime Events -->
@@ -91,8 +101,9 @@
   <!-- Bootstrap 5 JS (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    $('input[id="dateSelector2"]').daterangepicker();
     //const downtimeForm = document.getElementById('downtimeForm');
-    const fetchEventsBtn = document.getElementById('fetchEventsBtn');
+    const fetchEventsBtn = document.getElementById('dateSelector1');
     const downtimeTableBody = document.getElementById('downtimeTableBody');
 
     const today = new Date();
@@ -102,7 +113,7 @@
 
     const isoDate = `${year}-${month}-${day}`;
 
-    document.getElementById('existingDateTable').value = isoDate;
+    document.getElementById('dateSelector1').value = isoDate;
 
 
     fetchEventsBtn.addEventListener('click', () => {
@@ -112,7 +123,7 @@
     });
 
     function loadDowntimeEvents() {
-      const dateToFetch = document.getElementById('existingDateTable').value;
+      const dateToFetch = document.getElementById('dateSelector1').value;
       //console.log(dateToFetch);
       fetch('/api/getTodayDowntime?date=' + dateToFetch)
         .then(response => response.json())
@@ -147,7 +158,7 @@
     }
 
     function getMetrics() {
-      const dateToFetch = document.getElementById('existingDateTable').value;
+      const dateToFetch = document.getElementById('dateSelector1').value;
 
       fetch('/api/getMetrics?date=' + dateToFetch)
         .then(response => response.json())

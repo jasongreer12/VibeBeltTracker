@@ -10,6 +10,16 @@ body {
 #fetchEventsBtn {
     margin-left: auto;
 }
-#existingDateTable {
-    width: 180px;
+
+#dateSelector1,
+#dateSelector2 {
+    /*width: 180px;*/
+    display: flex;
+    max-width: fit-content;
+}
+
+.form-select {
+    display: flex;
+    max-width: fit-content;
+    margin-left: auto;
 }
