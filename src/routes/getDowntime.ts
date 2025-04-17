@@ -39,30 +39,6 @@ router.get('/getTodayDowntime', async (req, res) => {
       // result is OpDetailsRecord[]
       res.json(result);
     }
-
-
-
-
-    // if (recordset.length !== 0) { // case 1, there are records for the day and we need to make sure OpRecord has been created for the day
-    //   await createOpRecord(dateToFetch, pool);
-    //   res.json(recordset);
-    //   return;
-    // } else if (recordset.length === 0 || !result.recordset) { // if there are no records for today, check if belt records exist, if they do run insertDowntime, else return
-    //   // Insert downtime records only if they don't already exist
-    //   await insertShiftDowntimes(dateToFetch, pool);
-    //   //console.log("Inserting shift downtime function in getdowntime");
-    //   // fetch the records after insertion
-    //   const newResult = await pool.request()
-    //     .input('dateToFetch', sql.Date, dateToFetch)
-    //     .query('SELECT * FROM OpDetails WHERE day = @dateToFetch ORDER BY endingDowntime');
-    //   //console.log(newResult.recordset.length + " new result record set in getdowntime line 48.");
-    //   if (newResult.recordset.length === 0) {
-    //     res.json("EMPTY");
-    //   }
-    //   else {
-    //     res.json(newResult.recordset);
-    //   }
-    //   }
   } catch (error) {
     console.error('Error fetching todays results: ', error);
     res.status(500).json({ error: 'Failed to fetch records.' });
