@@ -19,38 +19,69 @@ interface OpDetailsRecord {
 
 router.get('/getTodayDowntime', async (req, res) => {
   try {
+    let result;
     const dateToFetch = req.query.date as string;
-    const pool: sql.ConnectionPool = req.app.locals.db;
-    
-    // base query to bind inputs dynamically
-    let query = 'SELECT * FROM OpDetails WHERE day ';
-    const request = pool.request();
-    
-    if (dateToFetch.includes(' - ')) {
-      // use moment.js to split each date
-      const [startStr, endStr] = dateToFetch.split(' - ');
-      const start = moment(startStr, "MM/DD/YYYY").format("YYYY-MM-DD");
-      const end   = moment(endStr, "MM/DD/YYYY").format("YYYY-MM-DD");
-      
-      query += 'BETWEEN @start AND @end ';
-      request.input('start', sql.Date, start);
-      request.input('end', sql.Date, end);
-    } else {
-      query += '= @date ';
-      request.input('date', sql.Date, dateToFetch);
+    if (!dateToFetch) {
+      res.status(400).send('Date is required.');
+      return;
     }
-    
-    query += 'ORDER BY endingDowntime';
-    
+    const pool: sql.ConnectionPool = req.app.locals.db;
+
+
+    if (dateToFetch.includes(' - ')) { // to process multiple dates
+      result = await processMultipleDates(dateToFetch, pool);
+    } else {
+      result = await processSingleDate(dateToFetch, pool);
+    }
+    if (result === "EMPTY") {
+      res.json("EMPTY");
+    } else {
+      // result is OpDetailsRecord[]
+      res.json(result);
+    }
+
+
+
+
+    // if (recordset.length !== 0) { // case 1, there are records for the day and we need to make sure OpRecord has been created for the day
+    //   await createOpRecord(dateToFetch, pool);
+    //   res.json(recordset);
+    //   return;
+    // } else if (recordset.length === 0 || !result.recordset) { // if there are no records for today, check if belt records exist, if they do run insertDowntime, else return
+    //   // Insert downtime records only if they don't already exist
+    //   await insertShiftDowntimes(dateToFetch, pool);
+    //   //console.log("Inserting shift downtime function in getdowntime");
+    //   // fetch the records after insertion
+    //   const newResult = await pool.request()
+    //     .input('dateToFetch', sql.Date, dateToFetch)
+    //     .query('SELECT * FROM OpDetails WHERE day = @dateToFetch ORDER BY endingDowntime');
+    //   //console.log(newResult.recordset.length + " new result record set in getdowntime line 48.");
+    //   if (newResult.recordset.length === 0) {
+    //     res.json("EMPTY");
+    //   }
+    //   else {
+    //     res.json(newResult.recordset);
+    //   }
+    //   }
+  } catch (error) {
+    console.error('Error fetching todays results: ', error);
+    res.status(500).json({ error: 'Failed to fetch records.' });
+  }
+});
+
+async function processSingleDate(dateToFetch: string, pool: sql.ConnectionPool): Promise<any> { // helper function for single date processing
+  try {
+    // base query to bind inputs dynamically
+    const request = pool.request();
+    let query = 'SELECT * FROM OpDetails WHERE day = @date ORDER BY endingDowntime';
+    request.input('date', sql.Date, dateToFetch);
+
     const result = await request.query<OpDetailsRecord>(query);
     const recordset = result.recordset;
 
-
-
-    if (recordset.length !== 0) {
-      createOpRecord(dateToFetch, pool);
-      res.json(recordset);
-      return;
+    if (recordset.length !== 0) { // case 1, there are records for the day and we need to make sure OpRecord has been created for the day
+      await createOpRecord(dateToFetch, pool);
+      return recordset;
     } else if (recordset.length === 0 || !result.recordset) { // if there are no records for today, check if belt records exist, if they do run insertDowntime, else return
       // Insert downtime records only if they don't already exist
       await insertShiftDowntimes(dateToFetch, pool);
@@ -60,18 +91,49 @@ router.get('/getTodayDowntime', async (req, res) => {
         .input('dateToFetch', sql.Date, dateToFetch)
         .query('SELECT * FROM OpDetails WHERE day = @dateToFetch ORDER BY endingDowntime');
       //console.log(newResult.recordset.length + " new result record set in getdowntime line 48.");
-      if (newResult.recordset.length === 0) {
-        res.json("EMPTY");
-      }
-      else {
-        res.json(newResult.recordset);
-      }
+      return newResult.recordset.length > 0
+        ? newResult.recordset
+        : "EMPTY";
     }
   } catch (error) {
     console.error('Error fetching todays results: ', error);
-    res.status(500).json({ error: 'Failed to fetch records.' });
   }
-});
+}
+
+
+// function to get total time belt was ran for given day
+async function processMultipleDates(dateRange: string, pool: sql.ConnectionPool): Promise<any> {
+  // date will be in format "mm/dd/yyyy - mm/dd/yyyy"
+  // Split the range into start and end dates using moment.js
+  const [startStr, endStr] = dateRange.split(' - ');
+  const startDate = moment(startStr, "MM/DD/YYYY").startOf('day');
+  const endDate = moment(endStr, "MM/DD/YYYY").startOf('day');
+
+
+  // Iterate from startDate to endDate inclusive
+  let currentDate = startDate.clone();
+  while (currentDate.isSameOrBefore(endDate)) {
+    // format to YYYY-MM-DD when you call your helper
+    const formattedDate = currentDate.format("YYYY-MM-DD");
+    console.log("Processing date:", formattedDate);
+
+    await processSingleDate(formattedDate, pool);
+
+    currentDate.add(1, 'day');
+  }
+
+  const request = pool.request();
+
+  const formattedStart = startDate.format("YYYY-MM-DD");
+  const formattedEnd = endDate.format("YYYY-MM-DD");
+
+  let query = 'SELECT * FROM OpDetails WHERE day BETWEEN @start AND @end ORDER BY day';
+  request.input('start', sql.Date, formattedStart);
+  request.input('end', sql.Date, formattedEnd);
+
+  const result = await request.query<OpDetailsRecord>(query);
+  return result.recordset;
+}
 
 
 // function to get total time belt was ran for given day
@@ -167,7 +229,7 @@ async function insertShiftDowntimes(dateToFetch: string, pool: sql.ConnectionPoo
   }
 
   // create oprecord here
-  createOpRecord(dateToFetch, pool);
+  await createOpRecord(dateToFetch, pool);
   //console.log('Inserted Downtime Records:', downtimeRecords);
 }
 

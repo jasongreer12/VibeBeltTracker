@@ -1,68 +1,113 @@
 import { Router, Request, Response } from 'express';
 import sql from 'mssql';
+import moment from 'moment';
 
 const router = Router();
 
-const trueShiftStart: string = '12:00:00'; // times in UTC. Equivalent to 06:00 AM in GMT-5
-const trueShiftEnd: string = '23:00:00'; // times in UTC. Equivalent to 05:00 PM in GMT-5
-const totalShiftHours: number = 11;
+const totalShiftHours = 11;    // each shift is 11 hours
 
-router.get('/getMetrics', async (req, res) => {
+// fetch a single day OpRecord row
+async function fetchOrCreateMetricsForDate(
+    date: string,
+    pool: sql.ConnectionPool
+): Promise<{
+    tons: number;
+    downtime: number;
+    plantUp: number;
+    scheduledPlantUp: number;
+}> {
+    // ensure OpDetails & OpRecord are up to date
+
+    // fetch the OpRecord row
+    const recRes = await pool.request()
+        .input('day', sql.Date, date)
+        .query<{ tons: number; downtime: number; plantUp: number }>(
+            `SELECT tons, downtime, plantUp 
+         FROM OpRecord 
+        WHERE day = @day`
+        );
+    if (!recRes.recordset.length) {
+        // no record found even after creation: treat as zeros
+        return { tons: 0, downtime: 0, plantUp: 0, scheduledPlantUp: 0 };
+    }
+    const { tons, downtime, plantUp } = recRes.recordset[0];
+
+    // calculate scheduledPlantUp from OpDetails codes
+    let scheduledPlantUp = totalShiftHours * 60; // in minutes
+    const dtRes = await pool.request()
+        .input('day', sql.Date, date)
+        .query<{ code: number | null; downtimeMinutes: number }>(
+            `SELECT code, downtimeMinutes 
+         FROM OpDetails 
+        WHERE day = @day`
+        );
+    for (const r of dtRes.recordset) {
+        if (r.code === null) {
+            // unknown downtime > invalidate availability
+            scheduledPlantUp = 0;
+            break;
+        }
+        if (r.code >= 100 && r.code < 200) {
+            scheduledPlantUp -= r.downtimeMinutes;
+        }
+    }
+
+    return { tons, downtime, plantUp, scheduledPlantUp };
+}
+
+router.get('/getMetrics', async (req: Request, res: Response): Promise<void> => {
     try {
-        const dateToFetch = req.query.date as string;
-        //console.log(dateToFetch);
-        const pool: sql.ConnectionPool = req.app.locals.db;
-        const result = await pool.request()
-            .input('dateToFetch', sql.Date, dateToFetch)
-            .query('SELECT * FROM OpRecord WHERE day = @dateToFetch');
-            console.log(result.recordset.length);
-            if (result.recordset.length > 0) {
-                const record = result.recordset[0]; // Access the first row
-                record.truePlantAvailability = ((record.plantUp / 60) / totalShiftHours) * 100; // convert to hours and divide my shift total
-                console.log('Tons:', record.tons);
-                console.log('Downtime:', record.downtime);
-                console.log('Plant Up:', record.plantUp);
+        const param = req.query.date as string;
+        if (!param) { 
+            return;// res.status(400).send('Date is required.');
+        }
+        const pool = req.app.locals.db as sql.ConnectionPool;
 
-                const scheduledPlantUp: number = await calculatePlantAvailability(dateToFetch, pool);
-                if (scheduledPlantUp != -1) {
-                    record.plantAvailability = ((record.plantUp / 60) / (scheduledPlantUp / 60)) * 100;
-                } else {
-                    record.plantAvailability = -1;
-                }
-
-                res.json(record); // Send the record as JSON response
-            } else {
-                console.log('No records found for the given date.');
-                res.json("EMPTY");
-                //res.status(404).json({ message: 'No data available for the selected date.' });
+        // Build array of ISO dates
+        const days: string[] = [];
+        if (param.includes(' - ')) {
+            const [start, end] = param.split(' - ');
+            let cur = moment(start, 'MM/DD/YYYY').startOf('day');
+            const last = moment(end, 'MM/DD/YYYY').startOf('day');
+            while (cur.isSameOrBefore(last)) {
+                days.push(cur.format('YYYY-MM-DD'));
+                cur.add(1, 'day');
             }
-    } catch (error) {
-        console.error('Error fetching metrics: ', error);
+        } else {
+            days.push(param);
+        }
+
+        // Fetch metrics for each day in parallel
+        const perDay = await Promise.all(
+            days.map(d => fetchOrCreateMetricsForDate(d, pool))
+        );
+
+        // Aggregate
+        const totalTons = perDay.reduce((sum, d) => sum + d.tons, 0);
+        const totalDowntime = perDay.reduce((sum, d) => sum + d.downtime, 0);
+        const totalPlantUp = perDay.reduce((sum, d) => sum + d.plantUp, 0);
+        const totalSchedUp = perDay.reduce((sum, d) => sum + d.scheduledPlantUp, 0);
+
+        // Compute combined availability metrics
+        const truePlantAvailability =
+            (totalPlantUp / 60) / (totalShiftHours * days.length) * 100;
+
+        const plantAvailability = totalSchedUp > 0
+            ? (totalPlantUp / 60) / (totalSchedUp / 60) * 100
+            : -1;
+
+        res.json({
+            days: days.length,
+            totalTons,
+            totalDowntime,
+            totalPlantUp,
+            truePlantAvailability,
+            plantAvailability
+        });
+    } catch (err) {
+        console.error('Error fetching metrics:', err);
         res.status(500).json({ error: 'Failed to fetch metrics.' });
     }
 });
-
-
-async function calculatePlantAvailability(date: string, pool: sql.ConnectionPool): Promise<number> {
-    // scheduledPlantUp = shiftDuration - plannedDowntime
-    const result = await pool.request()
-        .input('date', sql.Date, date)
-        .query('SELECT code, downtimeMinutes FROM OpDetails WHERE day = @date')
-    let totalShiftMinutes: number = 660;
-    // if code = 100-199 then subtract its downtimeMinutes from the total time it was supposed to be running
-    const recordLength = result.recordset.length;
-    for (let i: number = 0; i < recordLength; i++) {
-        const record = result.recordset[i];
-        if (record.code >= 100 && record.code <= 199) {
-            totalShiftMinutes -= record.downtimeMinutes;
-        }
-        else if (record.code === null) {
-            console.log('record code when it should be null = ', record.code);
-            return -1;
-        }
-    }
-    return totalShiftMinutes;
-}
-
 
 export default router;

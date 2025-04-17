@@ -11,6 +11,7 @@
   <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="index.css" />
@@ -97,6 +98,26 @@
     </table>
   </div>
 
+  <!-- Modal -->
+  <div class="modal fade" id="saveModal" tabindex="-1" role="dialog" aria-labelledby="saveModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="saveModalLabel">Saved sucessfully!</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          The new code has been saved!
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap 5 JS (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -117,12 +138,12 @@
 
     document.getElementById('dateSelector1').addEventListener('change', () => {
       loadDowntimeEvents();
+      //getMetrics();
+    });
+    $('#dateSelector2').on('apply.daterangepicker', function (ev, picker) {
+      loadDowntimeEvents();
       getMetrics();
     });
-    $('#dateSelector2').on('apply.daterangepicker', function(ev, picker) {
-    loadDowntimeEvents();
-    getMetrics();
-  });
 
     function loadDowntimeEvents() {
       const pageViewValue = document.getElementById('daySelector').value;
@@ -133,13 +154,14 @@
       }
       else {
         dateToFetch = document.getElementById('dateSelector2').value;
-        alert(dateToFetch);
+        //alert(dateToFetch);
       }
       //console.log(dateToFetch);
       fetch('/api/getTodayDowntime?date=' + dateToFetch)
         .then(response => response.json())
         .then(events => {
           downtimeTableBody.innerHTML = ''; // Clear current rows
+          console.log(events);
           if (events === "EMPTY") {
             const row = document.createElement('tr');
             row.innerHTML = `<td colspan="7" class="text-center">No data for this date.</td>`;
@@ -153,7 +175,7 @@
               <td>${event.detailID}</td>
               <td>${event.startingDowntime.split('T')[1].split('.')[0]}</td>
               <td>${event.endingDowntime.split('T')[1].split('.')[0]}</td>
-              <td><input type='text' class='form-control' value=${event.code}></td>
+              <td><input type='text' class='form-control' value=${event.code} type='number' onkeypress='if (!/[0-9]/.test(event.key)) event.preventDefault()'></td>
               <td>${new Date(event.day).toISOString().split('T')[0]}</td>
               <td>${event.downtimeMinutes}</td>
               <td><button class='btn btn-primary' id='tblBtn${rowCounter}' onclick='updateOpDetails(${rowCounter})'>Save</button></td>
@@ -161,6 +183,7 @@
             downtimeTableBody.appendChild(row);
             rowCounter++;
           });
+          getMetrics();
         })
         .catch(error => {
           console.error('Error fetching downtime events:', error);
@@ -169,7 +192,14 @@
     }
 
     function getMetrics() {
-      const dateToFetch = document.getElementById('dateSelector1').value;
+      const pageViewValue = document.getElementById('daySelector').value;
+      let dateToFetch = "";
+      if (pageViewValue === "single") {
+        dateToFetch = document.getElementById('dateSelector1').value;
+      }
+      else {
+        dateToFetch = document.getElementById('dateSelector2').value;
+      }
 
       fetch('/api/getMetrics?date=' + dateToFetch)
         .then(response => response.json())
@@ -182,14 +212,14 @@
             document.getElementById('plantAvailabilityID').textContent = "No data to display";
           }
           else {
-            document.getElementById('plantDurationID').textContent = metrics.plantUp / 60 + " hrs";
-            document.getElementById('downtimeID').textContent = metrics.downtime / 60 + " hrs";
-            document.getElementById('tonsID').textContent = metrics.tons + " tons";
+            document.getElementById('plantDurationID').textContent = metrics.totalPlantUp / 60 + " hrs";
+            document.getElementById('downtimeID').textContent = metrics.totalDowntime / 60 + " hrs";
+            document.getElementById('tonsID').textContent = metrics.totalTons + " tons";
             document.getElementById('truePlantID').textContent = (metrics.truePlantAvailability).toFixed(2) + "%";
-            if (metrics.plantAvailability != -1) {
-              document.getElementById('plantAvailabilityID').textContent = metrics.plantAvailability + "%";
-            } else {
+            if (metrics.plantAvailability == -1 || pageViewValue === "multiple") {
               document.getElementById('plantAvailabilityID').textContent = "No data to display";
+            } else {
+              document.getElementById('plantAvailabilityID').textContent = metrics.plantAvailability + "%";
             }
           }
         })
@@ -199,7 +229,17 @@
 
     }
 
+    async function onRefreshClick() {
+      try {
+        await loadDowntimeEvents();  // wait for the table to render
+        await getMetrics();          // now metrics will see the updated state
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     function updateOpDetails(rowID) { // need to add validation check to only allow numbers
+      const bsModal = new bootstrap.Modal(document.getElementById('saveModal'));
       const btn = document.getElementById(`tblBtn${rowID}`);
       // Get the row 
       const row = btn.closest('tr');
@@ -209,8 +249,30 @@
       const code = inputField.value;
       const detailID = row.cells[0].textContent.trim();
 
-      fetch('/api/updateOpDetail?code=' + code + '&detailID=' + detailID);
+      fetch('/api/updateOpDetail?code=' + code + '&detailID=' + detailID)
+        .then(response => response.json())
+        .then(responseValue => {
+          if (responseValue === "Success") {
+            Swal.fire({
+              title: "Save Successful!",
+              text: "The new code has been saved for ID = " + detailID + "!",
+              icon: "success"
+            });
+          }
+          else {
+            Swal.fire({
+              title: "Save Failed!",
+              text: "The code was unable to be saved!",
+              icon: "error"
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching metrics:', error);
+        });
     }
+
+
 
     function changeView(selectElement) {
       if (selectElement.value === "single") {
