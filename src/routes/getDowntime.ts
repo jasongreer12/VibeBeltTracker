@@ -33,7 +33,7 @@ router.get('/getTodayDowntime', async (req, res) => {
     } else {
       result = await processSingleDate(dateToFetch, pool);
     }
-    if (result === "EMPTY") {
+    if (result === "EMPTY" || result.length == 0) {
       res.json("EMPTY");
     } else {
       // result is OpDetailsRecord[]

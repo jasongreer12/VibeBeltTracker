@@ -118,6 +118,12 @@
     </div>
   </div>
 
+  <div class="d-flex justify-content-center">
+    <div class="spinner-border" role="status" id="spinner">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
   <!-- Bootstrap 5 JS (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -138,7 +144,7 @@
 
     document.getElementById('dateSelector1').addEventListener('change', () => {
       loadDowntimeEvents();
-      //getMetrics();
+      getMetrics();
     });
     $('#dateSelector2').on('apply.daterangepicker', function (ev, picker) {
       loadDowntimeEvents();
@@ -146,6 +152,7 @@
     });
 
     function loadDowntimeEvents() {
+      document.getElementById("spinner").style.display = "block";
       const pageViewValue = document.getElementById('daySelector').value;
       console.log(pageViewValue);
       let dateToFetch = "";

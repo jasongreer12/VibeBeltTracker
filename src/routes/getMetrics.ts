@@ -58,7 +58,7 @@ async function fetchOrCreateMetricsForDate(
 router.get('/getMetrics', async (req: Request, res: Response): Promise<void> => {
     try {
         const param = req.query.date as string;
-        if (!param) { 
+        if (!param) {
             return;// res.status(400).send('Date is required.');
         }
         const pool = req.app.locals.db as sql.ConnectionPool;
@@ -95,15 +95,19 @@ router.get('/getMetrics', async (req: Request, res: Response): Promise<void> => 
         const plantAvailability = totalSchedUp > 0
             ? (totalPlantUp / 60) / (totalSchedUp / 60) * 100
             : -1;
-
-        res.json({
-            days: days.length,
-            totalTons,
-            totalDowntime,
-            totalPlantUp,
-            truePlantAvailability,
-            plantAvailability
-        });
+        if (totalTons == 0 && totalPlantUp == 0 && totalDowntime == 0) {
+            res.json("EMPTY");
+        }
+        else {
+            res.json({
+                days: days.length,
+                totalTons,
+                totalDowntime,
+                totalPlantUp,
+                truePlantAvailability,
+                plantAvailability
+            });
+        }
     } catch (err) {
         console.error('Error fetching metrics:', err);
         res.status(500).json({ error: 'Failed to fetch metrics.' });
