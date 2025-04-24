@@ -13,12 +13,3 @@ A full stack web app to track conveyor belt downtimes, calculate shift metrics, 
 - **Alerts:** SweetAlert2  
 
 ---
-
-## Quickstart
-
-1. **Clone the repo**  
-   ```bash
-   git clone https://github.com/jasongreer12/vibebelttracker.git
-   cd vibebelttracker
-   npm install
-   npm run dev
