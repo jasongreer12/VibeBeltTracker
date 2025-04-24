@@ -15,6 +15,8 @@
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -22,48 +24,72 @@
     <!-- <h1 class="mb-4" style="color: white">Belt Scale Downtime</h1> -->
 
     <!-- Downtime Event Form -->
-    <div class="card mb-4" id="downtimeCardID">
-      <div class="container my-4">
-        <!-- Flex container for metric boxes -->
-        <div class="d-flex justify-content-between align-items-stretch">
-          <!-- Box 1 -->
-          <div class="card metric-box text-center">
-            <div class="card-body">
-              <h5 class="card-title">Plant Duration</h5>
-              <p class="card-text" id="plantDurationID"></p>
+    <div class="container my-4 pb-4" id="downtimeCardID">
+      <div class="row justify-content-center gx-2 gy-3">
+        <!-- Box 1 -->
+        <div class="col-6 col-sm-4 col-md-2">
+          <div class="card metric-box text-center h-100">
+            <div class="card-body px-1">
+              <h5 class="card-title fs-6">Plant Duration</h5>
+              <p class="card-text fs-5" id="plantDurationID"></p>
             </div>
           </div>
-          <!-- Box 2 -->
-          <div class="card metric-box text-center">
-            <div class="card-body">
-              <h5 class="card-title">Total Downtime</h5>
-              <p class="card-text" id="downtimeID"></p>
+        </div>
+        <!-- Box 2 -->
+        <div class="col-6 col-sm-4 col-md-2">
+          <div class="card metric-box text-center h-100">
+            <div class="card-body px-1">
+              <h5 class="card-title fs-6">Total Downtime</h5>
+              <p class="card-text fs-5" id="downtimeID"></p>
             </div>
           </div>
-          <!-- Box 3 -->
-          <div class="card metric-box text-center">
-            <div class="card-body">
-              <h5 class="card-title">Total Rock Crushed</h5>
-              <p class="card-text" id="tonsID"></p>
+        </div>
+        <!-- Box 3 -->
+        <div class="col-6 col-sm-4 col-md-2">
+          <div class="card metric-box text-center h-100">
+            <div class="card-body px-1">
+              <h5 class="card-title fs-6">Total Rock Crushed</h5>
+              <p class="card-text fs-5" id="tonsID"></p>
             </div>
           </div>
-          <!-- Box 4 -->
-          <div class="card metric-box text-center">
-            <div class="card-body">
-              <h5 class="card-title">True Plant Availabilty</h5>
-              <p class="card-text" id="truePlantID"></p>
+        </div>
+        <!-- Box 4 -->
+        <div class="col-6 col-sm-4 col-md-2">
+          <div class="card metric-box text-center h-100">
+            <div class="card-body px-1">
+              <h5 class="card-title fs-6">True Plant Availability</h5>
+              <p class="card-text fs-5" id="truePlantID"></p>
             </div>
           </div>
-          <!-- Box 5 -->
-          <div class="card metric-box text-center">
-            <div class="card-body">
-              <h5 class="card-title">Plant Availability</h5>
-              <p class="card-text" id="plantAvailabilityID"></p>
+        </div>
+        <!-- Box 5 -->
+        <div class="col-6 col-sm-4 col-md-2">
+          <div class="card metric-box text-center h-100">
+            <div class="card-body px-1">
+              <h5 class="card-title fs-6">Plant Availability</h5>
+              <p class="card-text fs-5" id="plantAvailabilityID"></p>
             </div>
           </div>
         </div>
       </div>
+      <div class="row mb-4 gx-3">
+        <!-- Chart 1 -->
+        <div class="col-12 col-sm-6 col-md-6">
+          <div id="chartContainer" class="card p-3 text-center h-100">
+            <h6 class="mb-3">Plant Availability Breakdown</h6>
+            <canvas id="upDownChart" height="200"></canvas>
+          </div>
+        </div>
+        <!-- Chart 2 -->
+        <div class="col-12 col-sm-6 col-md-6">
+          <div class="card p-3 text-center h-100">
+            <h6 class="mb-3">Downtime Minutes by Code</h6>
+            <canvas id="codeBarChart" height="200"></canvas>
+          </div>
+        </div>
+      </div>
     </div>
+
 
     <div class="d-flex align-items-center" style="padding-bottom: 25px;">
       <h2 class="mb-0 me-2" style="color: white">Existing Downtime Events for</h2>
@@ -80,22 +106,24 @@
     </div>
 
     <!-- Table to Display Downtime Events -->
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th scope="col">ID</th>
-          <th scope="col">Start Time</th>
-          <th scope="col">Stop Time</th>
-          <th scope="col">Code</th>
-          <th scope="col">Date</th>
-          <th scope="col">Total Minutes Down</th>
-          <th scope="col">Save Code</th>
-        </tr>
-      </thead>
-      <tbody id="downtimeTableBody">
-        <!-- Rows will be populated dynamically -->
-      </tbody>
-    </table>
+    <div class="container-fluid" id="tableContainer">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Start Time</th>
+            <th scope="col">Stop Time</th>
+            <th scope="col">Code</th>
+            <th scope="col">Date</th>
+            <th scope="col">Total Minutes Down</th>
+            <th scope="col">Save Code</th>
+          </tr>
+        </thead>
+        <tbody id="downtimeTableBody">
+          <!-- Rows will be populated dynamically -->
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Modal -->
@@ -187,6 +215,9 @@
           }
           let rowCounter = 0;
           events.forEach(event => {
+            const buckets = getDowntimeBuckets(events);
+            renderCodeBarChart(buckets);
+
             let formattedStart = event.startingDowntime.split('T')[1].split('.')[0];
             let formattedEnd = event.endingDowntime.split('T')[1].split('.')[0];
 
@@ -232,14 +263,25 @@
       fetch('/api/getMetrics?date=' + dateToFetch)
         .then(response => response.json())
         .then(metrics => {
+          const container = document.getElementById('chartContainer');
+          const canvas = document.getElementById('upDownChart');
+          // clear any old chart or message
+          container.querySelector('p')?.remove();
           if (metrics === "EMPTY") {
             document.getElementById('plantDurationID').textContent = "No data to display";
             document.getElementById('downtimeID').textContent = "No data to display";
             document.getElementById('tonsID').textContent = "No data to display";
             document.getElementById('truePlantID').textContent = "No data to display";
             document.getElementById('plantAvailabilityID').textContent = "No data to display";
+            canvas.style.display = 'none';
+            const msg = document.createElement('p');
+            msg.className = 'text-muted';
+            msg.textContent = 'No data to display';
+            container.appendChild(msg);
           }
           else {
+            canvas.style.display = '';
+            renderUpDownChart(metrics.totalPlantUp, metrics.totalDowntime);
             document.getElementById('plantDurationID').textContent = metrics.totalPlantUp / 60 + " hrs";
             document.getElementById('downtimeID').textContent = metrics.totalDowntime / 60 + " hrs";
             document.getElementById('tonsID').textContent = metrics.totalTons + " tons";
@@ -300,6 +342,72 @@
         });
     }
 
+    let upDownChartInstance = null;
+    function renderUpDownChart(upMinutes, totalDowntime) {
+      const ctx = document.getElementById('upDownChart').getContext('2d');
+
+      if (upDownChartInstance) {
+        upDownChartInstance.destroy();
+      }
+
+      upDownChartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Up Time', 'Down Time'],
+          datasets: [{
+            data: [upMinutes, totalDowntime],
+            backgroundColor: ['#4caf50', '#f44336']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2
+        }
+      });
+    }
+
+    function getDowntimeBuckets(details) {
+      const map = {};
+      details.forEach(d => {
+        const c = d.code ?? 'Uncoded';
+        map[c] = (map[c] || 0) + d.downtimeMinutes;
+      });
+      return Object.entries(map)
+        .map(([code, minutes]) => ({ code, minutes }))
+        .sort((a, b) => b.minutes - a.minutes);
+    }
+
+    let codeBarChartInstance = null;
+
+    function renderCodeBarChart(buckets) {
+      // buckets: array of { code: 100, minutes: 45 }, etc.
+      const labels = buckets.map(b => b.code);
+      const data = buckets.map(b => b.minutes);
+
+      const ctx = document.getElementById('codeBarChart').getContext('2d');
+      if (codeBarChartInstance) codeBarChartInstance.destroy();
+
+      codeBarChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Downtime (min)',
+            data,
+            backgroundColor: '#f44336'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            x: { title: { display: true, text: 'Downtime Code' } },
+            y: { title: { display: true, text: 'Minutes' }, beginAtZero: true }
+          }
+        }
+      });
+    }
 
 
     function changeView(selectElement) {

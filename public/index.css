@@ -1,10 +1,17 @@
 body {
     background-color: #666666;
     background-image: url("backgroundImage.png");
+    font-family: 'Roboto', sans-serif;
+    /*overflow-y: hidden;*/
 }
 
 #downtimeCardID {
     background-color: lightgray;
+    border-radius: 12px;
+}
+
+.card-title {
+    font-weight: 600;
 }
 
 #fetchEventsBtn {
@@ -34,3 +41,5 @@ body {
     left: 50%;
     display: none;
 }
+
+#tableContainer { height: calc(100vh - 290px); }
