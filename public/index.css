@@ -39,12 +39,15 @@ body {
     margin-left: auto;
 }
 
-#spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    display: none;
-}
+#spinnerOverlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
 
 #tableContainer { height: calc(100vh - 290px); }
 
@@ -66,4 +69,13 @@ body {
 
   tr:hover td {
     background-color: transparent; /* or #000 */
+}
+
+.swal2-confirm {
+    background-color: #93e665
+}
+
+.btn:hover {
+    transition: transform 0.15s ease-in-out;
+    transform: scale(1.05);
 }

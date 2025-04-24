@@ -14,6 +14,8 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <!-- Bootstrap 5 JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <link rel="stylesheet" href="index.css" />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -72,7 +74,7 @@
           </div>
         </div>
       </div>
-      <div class="row gx-3 justify-content-center mb-4">
+      <div class="row gx-3 justify-content-center mb-4" style="margin-top: 5px;">
         <!-- Chart 1 -->
         <div class="col-12 col-sm-6">
           <div id="chartContainer" class="card p-3 text-center chart-container mx-auto">
@@ -146,29 +148,20 @@
     </div>
   </div>
 
-  <div class="d-flex justify-content-center">
+  <div id="spinnerOverlay" class="d-none">
     <div class="spinner-border" role="status" id="spinner">
-      <span class="visually-hidden">Loading...</span>
+      <span class="visually-hidden">Loading…</span>
     </div>
   </div>
 
-  <!-- Bootstrap 5 JS (CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
-    /*
-     *  Note: for visualization, do a circle graph with the entire day. 
-     *  Metrics for this should be: plantUp, plantDown and plantDown should be divided into scheduled vs unscheduled
-     *  Next graph should be a 
-    
-    */
-
-
-
-
     //const downtimeForm = document.getElementById('downtimeForm');
     const fetchDate1 = document.getElementById('dateSelector1');
     const fetchDate2 = document.getElementById('dateSelector2');
     const downtimeTableBody = document.getElementById('downtimeTableBody');
+    const overlay = document.getElementById('spinnerOverlay');
+    const spinner = document.getElementById('spinner');
 
     const today = new Date();
     const year = today.getFullYear();
@@ -189,8 +182,15 @@
       getMetrics();
     });
 
-    function loadDowntimeEvents() {
-      //document.getElementById("spinner").style.display = "block";
+    function showSpinner() {
+      overlay.classList.remove('d-none');
+    }
+    function hideSpinner() {
+      overlay.classList.add('d-none');
+    }
+
+    /*async loadDowntimeEvents() {
+      showSpinner();
       const pageViewValue = document.getElementById('daySelector').value;
       console.log(pageViewValue);
       let dateToFetch = "";
@@ -202,35 +202,36 @@
         //alert(dateToFetch);
       }
       //console.log(dateToFetch);
-      fetch('/api/getTodayDowntime?date=' + dateToFetch)
-        .then(response => response.json())
-        .then(events => {
-          downtimeTableBody.innerHTML = ''; // Clear current rows
-          console.log(events);
-          const container = document.getElementById('barContainer');
-          const canvas = document.getElementById('codeBarChart');
-          // clear any old chart or message
-          container.querySelector('p')?.remove();
-          if (events === "EMPTY") {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="7" class="text-center">No data for this date.</td>`;
-            downtimeTableBody.appendChild(row);
-            canvas.style.display = 'none';
-            const msg = document.createElement('p');
-            msg.className = 'text-muted';
-            msg.textContent = 'No data to display';
-            container.appendChild(msg);
-            return; // exit
-          }
-          let rowCounter = 0;
-          events.forEach(event => {
-            canvas.style.display = '';
+      try {
+        fetch('/api/getTodayDowntime?date=' + dateToFetch)
+          .then(response => response.json())
+          .then(events => {
+            downtimeTableBody.innerHTML = ''; // Clear current rows
+            console.log(events);
+            const container = document.getElementById('barContainer');
+            const canvas = document.getElementById('codeBarChart');
+            // clear any old chart or message
+            container.querySelector('p')?.remove();
+            if (events === "EMPTY") {
+              const row = document.createElement('tr');
+              row.innerHTML = `<td colspan="7" class="text-center">No data for this date.</td>`;
+              downtimeTableBody.appendChild(row);
+              canvas.style.display = 'none';
+              const msg = document.createElement('p');
+              msg.className = 'text-muted';
+              msg.textContent = 'No data to display';
+              container.appendChild(msg);
+              return; // exit
+            }
+            let rowCounter = 0;
+            events.forEach(event => {
+              canvas.style.display = '';
 
-            let formattedStart = event.startingDowntime.split('T')[1].split('.')[0];
-            let formattedEnd = event.endingDowntime.split('T')[1].split('.')[0];
+              let formattedStart = event.startingDowntime.split('T')[1].split('.')[0];
+              let formattedEnd = event.endingDowntime.split('T')[1].split('.')[0];
 
-            const row = document.createElement('tr');
-            row.innerHTML = `
+              const row = document.createElement('tr');
+              row.innerHTML = `
               <td>${event.detailID}</td>
               <td>${formatTime(formattedStart)}</td>
               <td>${formatTime(formattedEnd)}</td>
@@ -239,17 +240,93 @@
               <td>${event.downtimeMinutes}</td>
               <td><button class='btn btn-primary' id='tblBtn${rowCounter}' onclick='updateOpDetails(${rowCounter})'>Save</button></td>
             `;
-            downtimeTableBody.appendChild(row);
-            rowCounter++;
-          });
-          const buckets = getDowntimeBuckets(events);
-          renderCodeBarChart(buckets);
-          getMetrics();
-        })
-        .catch(error => {
-          console.error('Error fetching downtime events:', error);
-          alert('Failed to fetch downtime events.');
-        });
+              downtimeTableBody.appendChild(row);
+              rowCounter++;
+            });
+            const buckets = getDowntimeBuckets(events);
+            renderCodeBarChart(buckets);
+            await getMetrics();
+          })
+      } catch (err) {
+        console.error('Error loading downtime events:', err);
+        alert('Failed to load events.');
+      } finally {
+        hideSpinner();
+      }
+    }*/
+    async function loadDowntimeEvents() { // <--- Added async
+        showSpinner();
+        const pageViewValue = document.getElementById('daySelector').value;
+        console.log(pageViewValue);
+        let dateToFetch = "";
+        if (pageViewValue === "single") {
+            dateToFetch = document.getElementById('dateSelector1').value;
+        } else {
+            dateToFetch = document.getElementById('dateSelector2').value;
+        }
+
+        try {
+            // --- Await the fetch ---
+            const response = await fetch('/api/getTodayDowntime?date=' + dateToFetch); 
+            if (!response.ok) { 
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const events = await response.json(); 
+
+            downtimeTableBody.innerHTML = ''; // clear current rows 
+            console.log(events);
+            const container = document.getElementById('barContainer');
+            const canvas = document.getElementById('codeBarChart');
+            // clear any old chart or message
+            container.querySelector('p')?.remove();
+
+            if (events === "EMPTY" || !Array.isArray(events) || events.length === 0) { 
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="7" class="text-center">No data for this date.</td>`;
+                downtimeTableBody.appendChild(row);
+                canvas.style.display = 'none';
+                const msg = document.createElement('p');
+                msg.className = 'text-muted';
+                msg.textContent = 'No data to display';
+                container.appendChild(msg);
+                await getMetrics(); // still call
+                return; // exit 
+            }
+
+            let rowCounter = 0;
+            events.forEach(event => {
+                canvas.style.display = ''; // make sure canvas is visible if theres data
+
+                // basic check if split works as expected
+                let formattedStart = event.startingDowntime?.split('T')[1]?.split('.')[0] || 'N/A';
+                let formattedEnd = event.endingDowntime?.split('T')[1]?.split('.')[0] || 'N/A';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${event.detailID ?? 'N/A'}</td>
+                    <td>${formatTime(formattedStart)}</td>
+                    <td>${formatTime(formattedEnd)}</td>
+                    <td><input type='text' class='form-control' value='${event.code ?? ''}' type='number' onkeypress='if (!/[0-9]/.test(event.key)) event.preventDefault()'></td>
+                    <td>${event.day ? new Date(event.day).toISOString().split('T')[0] : 'N/A'}</td>
+                    <td>${event.downtimeMinutes ?? 'N/A'}</td>
+                    <td><button class='btn btn-primary' id='tblBtn${rowCounter}' onclick='updateOpDetails(${rowCounter})'>Save</button></td>
+                `;
+                downtimeTableBody.appendChild(row);
+                rowCounter++;
+            });
+
+            const buckets = getDowntimeBuckets(events);
+            renderCodeBarChart(buckets);
+            await getMetrics(); 
+
+        } catch (err) {
+            console.error('Error loading downtime events:', err);
+            downtimeTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load events. Error: ${err.message}</td></tr>`;
+            document.getElementById('codeBarChart').style.display = 'none';
+        } finally {
+            hideSpinner();
+        }
     }
 
     function formatTime(timeToFormat) { // helper function used in loadDowntimeEvents() to format time
@@ -278,6 +355,10 @@
           // clear any old chart or message
           container.querySelector('p')?.remove();
           if (metrics === "EMPTY") {
+            document.querySelectorAll('.card-text').forEach(el => {
+              el.classList.add('text-muted');
+            });
+
             document.getElementById('plantDurationID').textContent = "No data to display";
             document.getElementById('downtimeID').textContent = "No data to display";
             document.getElementById('tonsID').textContent = "No data to display";
@@ -338,6 +419,7 @@
               text: "The new code has been saved for ID = " + detailID + "!",
               icon: "success"
             });
+            loadDowntimeEvents();
           }
           else {
             Swal.fire({
