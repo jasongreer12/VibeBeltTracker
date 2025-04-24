@@ -5,6 +5,10 @@ body {
     /*overflow-y: hidden;*/
 }
 
+/*.card {
+   
+}*/
+
 #downtimeCardID {
     background-color: lightgray;
     border-radius: 12px;
@@ -43,3 +47,23 @@ body {
 }
 
 #tableContainer { height: calc(100vh - 290px); }
+
+.chart-container {
+    position: relative;
+    width: 100%;       /* fill its column */
+    max-width: 400px;  /* caps its width—mx-auto will center if there's extra room on very large screens */
+    height: 250px;     /* fixed height you prefer */
+  }
+  .chart-container canvas {
+    /* force the chart to fill that box */
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  tr:hover {
+    background-color: lightgray;
+  }
+
+  tr:hover td {
+    background-color: transparent; /* or #000 */
+}

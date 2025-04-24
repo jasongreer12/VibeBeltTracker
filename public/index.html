@@ -72,17 +72,17 @@
           </div>
         </div>
       </div>
-      <div class="row mb-4 gx-3">
+      <div class="row gx-3 justify-content-center mb-4">
         <!-- Chart 1 -->
-        <div class="col-12 col-sm-6 col-md-6">
-          <div id="chartContainer" class="card p-3 text-center h-100">
+        <div class="col-12 col-sm-6">
+          <div id="chartContainer" class="card p-3 text-center chart-container mx-auto">
             <h6 class="mb-3">Plant Availability Breakdown</h6>
             <canvas id="upDownChart" height="200"></canvas>
           </div>
         </div>
         <!-- Chart 2 -->
-        <div class="col-12 col-sm-6 col-md-6">
-          <div class="card p-3 text-center h-100">
+        <div class="col-12 col-sm-6">
+          <div id="barContainer" class="card p-3 text-center chart-container mx-auto">
             <h6 class="mb-3">Downtime Minutes by Code</h6>
             <canvas id="codeBarChart" height="200"></canvas>
           </div>
@@ -207,16 +207,24 @@
         .then(events => {
           downtimeTableBody.innerHTML = ''; // Clear current rows
           console.log(events);
+          const container = document.getElementById('barContainer');
+          const canvas = document.getElementById('codeBarChart');
+          // clear any old chart or message
+          container.querySelector('p')?.remove();
           if (events === "EMPTY") {
             const row = document.createElement('tr');
             row.innerHTML = `<td colspan="7" class="text-center">No data for this date.</td>`;
             downtimeTableBody.appendChild(row);
+            canvas.style.display = 'none';
+            const msg = document.createElement('p');
+            msg.className = 'text-muted';
+            msg.textContent = 'No data to display';
+            container.appendChild(msg);
             return; // exit
           }
           let rowCounter = 0;
           events.forEach(event => {
-            const buckets = getDowntimeBuckets(events);
-            renderCodeBarChart(buckets);
+            canvas.style.display = '';
 
             let formattedStart = event.startingDowntime.split('T')[1].split('.')[0];
             let formattedEnd = event.endingDowntime.split('T')[1].split('.')[0];
@@ -234,6 +242,8 @@
             downtimeTableBody.appendChild(row);
             rowCounter++;
           });
+          const buckets = getDowntimeBuckets(events);
+          renderCodeBarChart(buckets);
           getMetrics();
         })
         .catch(error => {
@@ -289,7 +299,7 @@
             if (metrics.plantAvailability == -1 || pageViewValue === "multiple") {
               document.getElementById('plantAvailabilityID').textContent = "No data to display";
             } else {
-              document.getElementById('plantAvailabilityID').textContent = metrics.plantAvailability + "%";
+              document.getElementById('plantAvailabilityID').textContent = metrics.plantAvailability.toFixed(2) + "%";
             }
           }
         })
