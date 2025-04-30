@@ -5,10 +5,6 @@ body {
     /*overflow-y: hidden;*/
 }
 
-/*.card {
-   
-}*/
-
 #downtimeCardID {
     background-color: lightgray;
     border-radius: 12px;
@@ -53,9 +49,9 @@ body {
 
 .chart-container {
     position: relative;
-    width: 100%;       /* fill its column */
+    width: 100%;       
     max-width: 400px;  /* caps its width—mx-auto will center if there's extra room on very large screens */
-    height: 250px;     /* fixed height you prefer */
+    height: 250px;     
   }
   .chart-container canvas {
     /* force the chart to fill that box */
@@ -68,11 +64,11 @@ body {
   }
 
   tr:hover td {
-    background-color: transparent; /* or #000 */
+    background-color: transparent; 
 }
 
 .swal2-confirm {
-    background-color: #93e665
+    background-color: #79c252
 }
 
 .btn:hover {

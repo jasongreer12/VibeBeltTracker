@@ -26,7 +26,7 @@
     <!-- <h1 class="mb-4" style="color: white">Belt Scale Downtime</h1> -->
 
     <!-- Downtime Event Form -->
-    <div class="container my-4 pb-4" id="downtimeCardID">
+    <div class="container my-4 pb-4" id="downtimeCardID" style="box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);">
       <div class="row justify-content-center gx-2 gy-3">
         <!-- Box 1 -->
         <div class="col-6 col-sm-4 col-md-2">
@@ -109,7 +109,7 @@
 
     <!-- Table to Display Downtime Events -->
     <div class="container-fluid" id="tableContainer">
-      <table class="table table-striped">
+      <table class="table table-striped" style="box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);">
         <thead>
           <tr>
             <th scope="col">ID</th>
@@ -149,7 +149,7 @@
   </div>
 
   <div id="spinnerOverlay" class="d-none">
-    <div class="spinner-border" role="status" id="spinner">
+    <div class="spinner-border" role="status" id="spinner" style="width: 3rem; height: 3rem;">
       <span class="visually-hidden">Loading…</span>
     </div>
   </div>
@@ -189,121 +189,57 @@
       overlay.classList.add('d-none');
     }
 
-    /*async loadDowntimeEvents() {
+    
+    async function loadDowntimeEvents() { // <--- Added async
       showSpinner();
       const pageViewValue = document.getElementById('daySelector').value;
-      console.log(pageViewValue);
+      //console.log(pageViewValue);
       let dateToFetch = "";
       if (pageViewValue === "single") {
         dateToFetch = document.getElementById('dateSelector1').value;
-      }
-      else {
+      } else {
         dateToFetch = document.getElementById('dateSelector2').value;
-        //alert(dateToFetch);
       }
-      //console.log(dateToFetch);
+
       try {
-        fetch('/api/getTodayDowntime?date=' + dateToFetch)
-          .then(response => response.json())
-          .then(events => {
-            downtimeTableBody.innerHTML = ''; // Clear current rows
-            console.log(events);
-            const container = document.getElementById('barContainer');
-            const canvas = document.getElementById('codeBarChart');
-            // clear any old chart or message
-            container.querySelector('p')?.remove();
-            if (events === "EMPTY") {
-              const row = document.createElement('tr');
-              row.innerHTML = `<td colspan="7" class="text-center">No data for this date.</td>`;
-              downtimeTableBody.appendChild(row);
-              canvas.style.display = 'none';
-              const msg = document.createElement('p');
-              msg.className = 'text-muted';
-              msg.textContent = 'No data to display';
-              container.appendChild(msg);
-              return; // exit
-            }
-            let rowCounter = 0;
-            events.forEach(event => {
-              canvas.style.display = '';
-
-              let formattedStart = event.startingDowntime.split('T')[1].split('.')[0];
-              let formattedEnd = event.endingDowntime.split('T')[1].split('.')[0];
-
-              const row = document.createElement('tr');
-              row.innerHTML = `
-              <td>${event.detailID}</td>
-              <td>${formatTime(formattedStart)}</td>
-              <td>${formatTime(formattedEnd)}</td>
-              <td><input type='text' class='form-control' value=${event.code} type='number' onkeypress='if (!/[0-9]/.test(event.key)) event.preventDefault()'></td>
-              <td>${new Date(event.day).toISOString().split('T')[0]}</td>
-              <td>${event.downtimeMinutes}</td>
-              <td><button class='btn btn-primary' id='tblBtn${rowCounter}' onclick='updateOpDetails(${rowCounter})'>Save</button></td>
-            `;
-              downtimeTableBody.appendChild(row);
-              rowCounter++;
-            });
-            const buckets = getDowntimeBuckets(events);
-            renderCodeBarChart(buckets);
-            await getMetrics();
-          })
-      } catch (err) {
-        console.error('Error loading downtime events:', err);
-        alert('Failed to load events.');
-      } finally {
-        hideSpinner();
-      }
-    }*/
-    async function loadDowntimeEvents() { // <--- Added async
-        showSpinner();
-        const pageViewValue = document.getElementById('daySelector').value;
-        console.log(pageViewValue);
-        let dateToFetch = "";
-        if (pageViewValue === "single") {
-            dateToFetch = document.getElementById('dateSelector1').value;
-        } else {
-            dateToFetch = document.getElementById('dateSelector2').value;
+        // --- Await the fetch ---
+        const response = await fetch('/api/getTodayDowntime?date=' + dateToFetch);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        try {
-            // --- Await the fetch ---
-            const response = await fetch('/api/getTodayDowntime?date=' + dateToFetch); 
-            if (!response.ok) { 
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+        const events = await response.json();
 
-            const events = await response.json(); 
+        downtimeTableBody.innerHTML = ''; // clear current rows 
+        //console.log(events);
+        const container = document.getElementById('barContainer');
+        const canvas = document.getElementById('codeBarChart');
+        // clear any old chart or message
+        container.querySelector('p')?.remove();
 
-            downtimeTableBody.innerHTML = ''; // clear current rows 
-            console.log(events);
-            const container = document.getElementById('barContainer');
-            const canvas = document.getElementById('codeBarChart');
-            // clear any old chart or message
-            container.querySelector('p')?.remove();
+        if (events === "EMPTY" || !Array.isArray(events) || events.length === 0) {
+          const row = document.createElement('tr');
+          row.innerHTML = `<td colspan="7" class="text-center">No data for this date.</td>`;
+          downtimeTableBody.appendChild(row);
+          canvas.style.display = 'none';
+          const msg = document.createElement('p');
+          msg.className = 'text-muted';
+          msg.textContent = 'No data to display';
+          container.appendChild(msg);
+          await getMetrics(); // still call
+          return; // exit 
+        }
 
-            if (events === "EMPTY" || !Array.isArray(events) || events.length === 0) { 
-                const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="7" class="text-center">No data for this date.</td>`;
-                downtimeTableBody.appendChild(row);
-                canvas.style.display = 'none';
-                const msg = document.createElement('p');
-                msg.className = 'text-muted';
-                msg.textContent = 'No data to display';
-                container.appendChild(msg);
-                await getMetrics(); // still call
-                return; // exit 
-            }
+        let rowCounter = 0;
+        events.forEach(event => {
+          canvas.style.display = ''; // make sure canvas is visible if theres data
 
-            let rowCounter = 0;
-            events.forEach(event => {
-                canvas.style.display = ''; // make sure canvas is visible if theres data
+          // basic check if split works as expected
+          let formattedStart = event.startingDowntime?.split('T')[1]?.split('.')[0] || 'N/A';
+          let formattedEnd = event.endingDowntime?.split('T')[1]?.split('.')[0] || 'N/A';
 
-                // basic check if split works as expected
-                let formattedStart = event.startingDowntime?.split('T')[1]?.split('.')[0] || 'N/A';
-                let formattedEnd = event.endingDowntime?.split('T')[1]?.split('.')[0] || 'N/A';
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
+          const row = document.createElement('tr');
+          row.innerHTML = `
                     <td>${event.detailID ?? 'N/A'}</td>
                     <td>${formatTime(formattedStart)}</td>
                     <td>${formatTime(formattedEnd)}</td>
@@ -312,21 +248,21 @@
                     <td>${event.downtimeMinutes ?? 'N/A'}</td>
                     <td><button class='btn btn-primary' id='tblBtn${rowCounter}' onclick='updateOpDetails(${rowCounter})'>Save</button></td>
                 `;
-                downtimeTableBody.appendChild(row);
-                rowCounter++;
-            });
+          downtimeTableBody.appendChild(row);
+          rowCounter++;
+        });
 
-            const buckets = getDowntimeBuckets(events);
-            renderCodeBarChart(buckets);
-            await getMetrics(); 
+        const buckets = getDowntimeBuckets(events);
+        renderCodeBarChart(buckets);
+        await getMetrics();
 
-        } catch (err) {
-            console.error('Error loading downtime events:', err);
-            downtimeTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load events. Error: ${err.message}</td></tr>`;
-            document.getElementById('codeBarChart').style.display = 'none';
-        } finally {
-            hideSpinner();
-        }
+      } catch (err) {
+        console.error('Error loading downtime events:', err);
+        downtimeTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load events. Error: ${err.message}</td></tr>`;
+        document.getElementById('codeBarChart').style.display = 'none';
+      } finally {
+        hideSpinner();
+      }
     }
 
     function formatTime(timeToFormat) { // helper function used in loadDowntimeEvents() to format time
@@ -400,6 +336,7 @@
     }
 
     function updateOpDetails(rowID) { // need to add validation check to only allow numbers
+      showSpinner();
       const bsModal = new bootstrap.Modal(document.getElementById('saveModal'));
       const btn = document.getElementById(`tblBtn${rowID}`);
       // Get the row 
@@ -414,14 +351,18 @@
         .then(response => response.json())
         .then(responseValue => {
           if (responseValue === "Success") {
-            Swal.fire({
+            hideSpinner();
+            setTimeout(function () {
+              Swal.fire({
               title: "Save Successful!",
               text: "The new code has been saved for ID = " + detailID + "!",
               icon: "success"
             });
+            }, 500);
             loadDowntimeEvents();
           }
           else {
+            hideSpinner();
             Swal.fire({
               title: "Save Failed!",
               text: "The code was unable to be saved!",
@@ -430,6 +371,7 @@
           }
         })
         .catch(error => {
+          hideSpinner();
           console.error('Error fetching metrics:', error);
         });
     }
