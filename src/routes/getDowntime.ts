@@ -27,8 +27,9 @@ router.get('/getTodayDowntime', async (req, res) => {
     }
     const pool: sql.ConnectionPool = req.app.locals.db;
 
-
-    if (dateToFetch.includes(' - ')) { // to process multiple dates
+    
+  // to process multiple dates
+    if (dateToFetch.includes(' - ')) { 
       result = await processMultipleDates(dateToFetch, pool);
     } else {
       result = await processSingleDate(dateToFetch, pool);

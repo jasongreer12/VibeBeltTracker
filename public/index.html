@@ -23,8 +23,6 @@
 
 <body>
   <div class="container py-4">
-    <!-- <h1 class="mb-4" style="color: white">Belt Scale Downtime</h1> -->
-
     <!-- Downtime Event Form -->
     <div class="container my-4 pb-4" id="downtimeCardID" style="box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);">
       <div class="row justify-content-center gx-2 gy-3">
@@ -99,7 +97,7 @@
       <!-- Date Range Picker Container -->
       <input type="text" id="dateSelector2" class="form-control" />
 
-      <!-- make a dropdown that changes from day week and month-->
+      <!-- make a dropdown that gets range-->
       <select class="form-select" id="daySelector" onchange="changeView(this);">
         <option value="single" selected>Day</option>
         <option value="multiple">Multiple Days</option>
@@ -156,7 +154,6 @@
 
 
   <script>
-    //const downtimeForm = document.getElementById('downtimeForm');
     const fetchDate1 = document.getElementById('dateSelector1');
     const fetchDate2 = document.getElementById('dateSelector2');
     const downtimeTableBody = document.getElementById('downtimeTableBody');
@@ -189,11 +186,10 @@
       overlay.classList.add('d-none');
     }
 
-    
+
     async function loadDowntimeEvents() { // <--- Added async
       showSpinner();
       const pageViewValue = document.getElementById('daySelector').value;
-      //console.log(pageViewValue);
       let dateToFetch = "";
       if (pageViewValue === "single") {
         dateToFetch = document.getElementById('dateSelector1').value;
@@ -211,7 +207,6 @@
         const events = await response.json();
 
         downtimeTableBody.innerHTML = ''; // clear current rows 
-        //console.log(events);
         const container = document.getElementById('barContainer');
         const canvas = document.getElementById('codeBarChart');
         // clear any old chart or message
@@ -243,7 +238,7 @@
                     <td>${event.detailID ?? 'N/A'}</td>
                     <td>${formatTime(formattedStart)}</td>
                     <td>${formatTime(formattedEnd)}</td>
-                    <td><input type='text' class='form-control' value='${event.code ?? ''}' type='number' onkeypress='if (!/[0-9]/.test(event.key)) event.preventDefault()'></td>
+                    <td><input type='text' class='form-control' value='${event.code}' type='number' onkeypress='if (!/[0-9]/.test(event.key)) event.preventDefault()'></td>
                     <td>${event.day ? new Date(event.day).toISOString().split('T')[0] : 'N/A'}</td>
                     <td>${event.downtimeMinutes ?? 'N/A'}</td>
                     <td><button class='btn btn-primary' id='tblBtn${rowCounter}' onclick='updateOpDetails(${rowCounter})'>Save</button></td>
@@ -335,7 +330,7 @@
       }
     }
 
-    function updateOpDetails(rowID) { // need to add validation check to only allow numbers
+    function updateOpDetails(rowID) {
       showSpinner();
       const bsModal = new bootstrap.Modal(document.getElementById('saveModal'));
       const btn = document.getElementById(`tblBtn${rowID}`);
@@ -344,8 +339,18 @@
 
       const inputField = row.querySelector('input');
       // Get the value from the input field
-      const code = inputField.value;
+      const code = inputField.value.trim();
       const detailID = row.cells[0].textContent.trim();
+
+      if (code == '') {
+        hideSpinner();
+        Swal.fire({
+          title: "Save Failed!",
+          text: "The code is empty!",
+          icon: "error"
+        });
+        return;
+      }
 
       fetch('/api/updateOpDetail?code=' + code + '&detailID=' + detailID)
         .then(response => response.json())
@@ -354,10 +359,10 @@
             hideSpinner();
             setTimeout(function () {
               Swal.fire({
-              title: "Save Successful!",
-              text: "The new code has been saved for ID = " + detailID + "!",
-              icon: "success"
-            });
+                title: "Save Successful!",
+                text: "The new code has been saved for ID = " + detailID + "!",
+                icon: "success"
+              });
             }, 500);
             loadDowntimeEvents();
           }
@@ -442,7 +447,6 @@
         }
       });
     }
-
 
     function changeView(selectElement) {
       if (selectElement.value === "single") {
