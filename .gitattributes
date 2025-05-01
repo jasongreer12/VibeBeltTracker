@@ -1,0 +1,2 @@
+# ignore HTML in public
+/public/index.html linguist-vendored
